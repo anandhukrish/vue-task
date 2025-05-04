@@ -2,6 +2,11 @@
 import { v4 as uuidv4 } from 'uuid'
 import { useField, useFieldArray, useForm } from 'vee-validate'
 import * as z from 'zod'
+import { toTypedSchema } from '@vee-validate/zod'
+import api from '@/axios/api'
+import { ref } from 'vue'
+import { AxiosError } from 'axios'
+import { cities } from '@/constants/constants'
 
 import FormGroup from '@/components/FormGroup.vue'
 import InputCheckbox from '@/components/ui/InputCheckbox.vue'
@@ -9,16 +14,12 @@ import InputFileupload from '@/components/ui/InputFileupload.vue'
 import RadioInput from '@/components/ui/RadioInput.vue'
 import Multiselect from 'vue-multiselect'
 import VueDatePicker from '@vuepic/vue-datepicker'
-
-import 'vue-multiselect/dist/vue-multiselect.css'
-import '@vuepic/vue-datepicker/dist/main.css'
-import { toTypedSchema } from '@vee-validate/zod'
-import api from '@/axios/api'
-import { ref } from 'vue'
-import { AxiosError } from 'axios'
 import ProfileTable from '@/components/ProfileTable.vue'
 import ErrorComponent from '@/components/ErrorComponent.vue'
 import InputRow from '@/components/InputRow.vue'
+
+import 'vue-multiselect/dist/vue-multiselect.css'
+import '@vuepic/vue-datepicker/dist/main.css'
 
 // initial values
 const initialValues = {
@@ -32,20 +33,6 @@ const initialValues = {
   city: [],
   file: null,
 }
-
-//cities list
-const cities = [
-  { value: 'nyc', label: 'New York City' },
-  { value: 'la', label: 'Los Angeles' },
-  { value: 'chicago', label: 'Chicago' },
-  { value: 'houston', label: 'Houston' },
-  { value: 'phoenix', label: 'Phoenix' },
-  { value: 'philadelphia', label: 'Philadelphia' },
-  { value: 'san_antonio', label: 'San Antonio' },
-  { value: 'san_diego', label: 'San Diego' },
-  { value: 'dallas', label: 'Dallas' },
-  { value: 'san_jose', label: 'San Jose' },
-]
 
 // Phone number validation regex
 const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/
@@ -115,8 +102,10 @@ const onSubmit = handleSubmit(async (values) => {
   const newValues: typeof values & { fileName: string } = { ...values, fileName: '' }
   newValues.city = values.city.map((c) => c.label)
   newValues.fileName = values.file.name
+
   loading.value = false
   error.value = ''
+
   try {
     const response = await api.post('/user', JSON.stringify(newValues))
     submittedData.value = response.data.data
@@ -144,7 +133,7 @@ function removeGroup(index: number) {
 </script>
 
 <template>
-  <main class="flex h-screen">
+  <main class="flex max-h-screen">
     <div class="container mx-auto px-3 md:px-0">
       <div class="max-w-[800px] border border-gray-300/50 rounded-2xl p-5 mx-auto flex flex-col">
         <h1 class="font-extrabold text-3xl text-center uppercase">Profile Completion Form</h1>
