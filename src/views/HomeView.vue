@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
 import { useField, useFieldArray, useForm } from 'vee-validate'
-import * as z from 'zod'
 import { toTypedSchema } from '@vee-validate/zod'
-import api from '@/axios/api'
-import { ref } from 'vue'
-import { AxiosError } from 'axios'
+import { useUserStore } from '@/stores/user'
+
 import { cities } from '@/constants/constants'
+import { schema, type ZodSchema } from '@/schema/schema'
 
 import FormGroup from '@/components/FormGroup.vue'
 import InputCheckbox from '@/components/ui/InputCheckbox.vue'
@@ -21,6 +20,8 @@ import InputRow from '@/components/InputRow.vue'
 import 'vue-multiselect/dist/vue-multiselect.css'
 import '@vuepic/vue-datepicker/dist/main.css'
 
+const userStore = useUserStore()
+
 // initial values
 const initialValues = {
   groups: [
@@ -34,51 +35,7 @@ const initialValues = {
   file: null,
 }
 
-// Phone number validation regex
-const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/
-
-// Email validation regex
-const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
-
-// Form validation schema
-const schema = z.object({
-  groups: z
-    .array(
-      z.object({
-        name: z.string().min(1, 'Name is required'),
-        email: z.string().min(1, 'Email is required').regex(emailRegex, 'Invalid email format'),
-        mobile: z
-          .string()
-          .min(1, 'Mobile number is required')
-          .regex(phoneRegex, 'Invalid phone format. Example: (844) 448-0110'),
-        id: z.string().min(1),
-      }),
-    )
-    .min(2, 'At least 2 person groups are required'),
-
-  birthDate: z.custom<Date>().refine((val) => !!val, { message: 'Birth date is required' }),
-
-  gender: z.string().min(1, 'Gender is required'),
-
-  languages: z.array(z.string()).min(1, 'At least one language must be selected'),
-
-  city: z
-    .array(z.any()) // or z.object({ value: z.string(), label: z.string() }) for stricter typing
-    .min(1, 'At least one city must be selected'),
-
-  file: z
-    .custom<File | null>()
-    .refine((val) => !!val, {
-      message: 'File is required',
-    })
-    .refine((val) => !val || ['image/jpeg', 'application/pdf'].includes((val as File).type), {
-      message: 'File must be JPEG or PDF',
-    }),
-})
-
-type ZodSchema = z.infer<typeof schema>
-
-const { errors, handleSubmit } = useForm({
+const { errors, handleSubmit, resetForm } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues,
 })
@@ -93,28 +50,15 @@ const { value: file } = useField<ZodSchema['file']>('file')
 //field array for dynamic groups
 const { fields, push, remove } = useFieldArray('groups')
 
-const submittedData = ref(null)
-const error = ref('')
-const loading = ref(false)
-
 // submit handler
 const onSubmit = handleSubmit(async (values) => {
   const newValues: typeof values & { fileName: string } = { ...values, fileName: '' }
   newValues.city = values.city.map((c) => c.label)
   newValues.fileName = values.file.name
 
-  loading.value = false
-  error.value = ''
+  await userStore.addUserData(newValues)
 
-  try {
-    const response = await api.post('/user', JSON.stringify(newValues))
-    submittedData.value = response.data.data
-  } catch (e) {
-    console.log(e)
-    if (e instanceof AxiosError) {
-      error.value = 'Something went wrong'
-    }
-  }
+  resetForm()
 })
 
 //asd a feild to the group
@@ -137,6 +81,7 @@ function removeGroup(index: number) {
     <div class="container mx-auto px-3 md:px-0">
       <div class="max-w-[800px] border border-gray-300/50 rounded-2xl p-5 mx-auto flex flex-col">
         <h1 class="font-extrabold text-3xl text-center uppercase">Profile Completion Form</h1>
+
         <form action="" @submit.prevent="onSubmit">
           <InputRow>
             <FormGroup
@@ -229,17 +174,21 @@ function removeGroup(index: number) {
           <div class="flex">
             <button
               type="submit"
-              class="px-8 py-2 rounded-lg bg-green-400 hover:bg-green-500 text-base text-white mt-5 ml-auto"
-              :disabled="loading"
+              class="px-8 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-base text-white mt-5 ml-auto disabled:bg-green-300"
+              :disabled="userStore.loading"
             >
-              {{ loading ? 'Submiting...' : 'Submit' }}
+              {{ userStore.loading ? 'Submiting...' : 'Submit' }}
             </button>
           </div>
         </form>
-        <div v-if="submittedData" class="mt-8">
-          <ProfileTable :data="submittedData" />
+        <div v-if="userStore.loading">Loading.....</div>
+        <div v-if="userStore.data" class="mt-8">
+          <ProfileTable :data="userStore.data" />
         </div>
-        <ErrorComponent message="Something Went Wrong Please Try again Later" v-if="error" />
+        <ErrorComponent
+          message="Something Went Wrong Please Try again Later"
+          v-if="userStore.error"
+        />
       </div>
     </div>
   </main>

@@ -9,7 +9,7 @@ const props = defineProps<{
       mobile: string
       id: string
     }[]
-    birthDate: string
+    birthDate: Date
     gender: string
     languages: string[]
     city: string[]
@@ -28,7 +28,7 @@ const formattedDate = computed(() =>
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
+  <div class="bg-white p-6 rounded-xl shadow-lg space-y-6 mt-10 border border-gray-500/10">
     <h2 class="text-2xl font-bold text-center">User Profile Summary</h2>
 
     <!-- Group Table -->

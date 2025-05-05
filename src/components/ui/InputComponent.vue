@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 type Props = {
   label?: string
   modelValue: string
@@ -9,7 +7,7 @@ type Props = {
   id: string
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -18,8 +16,6 @@ const emit = defineEmits<{
 function handleInput(e: Event) {
   emit('update:modelValue', (e.target as HTMLInputElement).value)
 }
-
-const safeValue = computed(() => props.modelValue ?? '')
 </script>
 <template>
   <div class="flex items-center gap-5">
@@ -27,7 +23,7 @@ const safeValue = computed(() => props.modelValue ?? '')
     <input
       :id="id"
       :placeholder="placeholder"
-      :value="safeValue"
+      :value="modelValue"
       :type="type || 'text'"
       @input="handleInput"
       class="w-full border border-gray-500/30 p-1.5 outline-none rounded-l"
